@@ -505,38 +505,40 @@ makeLogicMap sp = do
 
 emptySpec     :: Config -> GhcSpec
 emptySpec cfg = SP
-  { gsTySigs     = mempty
-  , gsAsmSigs    = mempty
-  , gsInSigs     = mempty
-  , gsCtors      = mempty
-  , gsLits       = mempty
-  , gsMeas       = mempty
-  , gsInvariants = mempty
-  , gsIaliases   = mempty
-  , gsDconsP     = mempty
-  , gsTconsP     = mempty
-  , gsFreeSyms   = mempty
-  , gsTcEmbeds   = mempty
-  , gsQualifiers = mempty
-  , gsADTs       = mempty
-  , gsTgtVars    = mempty
-  , gsDecr       = mempty
-  , gsTexprs     = mempty
-  , gsNewTypes   = mempty
-  , gsLvars      = mempty
-  , gsLazy       = mempty
-  , gsAutoInst   = mempty
-  , gsAutosize   = mempty
-  , gsConfig     = cfg
-  , gsExports    = mempty
-  , gsMeasures   = mempty
-  , gsTyconEnv   = mempty
-  , gsDicts      = mempty
-  , gsAxioms     = mempty
-  , gsReflects   = mempty
-  , gsLogicMap   = mempty
-  , gsProofType  = Nothing
-  , gsRTAliases  = mempty
+  { gsTySigs       = mempty
+  , gsAsmSigs      = mempty
+  , gsMethSigs     = mempty
+  , gsInSigs       = mempty
+  , gsCtors        = mempty
+  , gsLits         = mempty
+  , gsMeas         = mempty
+  , gsInvariants   = mempty
+  , gsIaliases     = mempty
+  , gsDconsP       = mempty
+  , gsTconsP       = mempty
+  , gsFreeSyms     = mempty
+  , gsTcEmbeds     = mempty
+  , gsQualifiers   = mempty
+  , gsADTs         = mempty
+  , gsTgtVars      = mempty
+  , gsDecr         = mempty
+  , gsTexprs       = mempty
+  , gsNewTypes     = mempty
+  , gsLvars        = mempty
+  , gsLazy         = mempty
+  , gsAutoInst     = mempty
+  , gsAutosize     = mempty
+  , gsConfig       = cfg
+  , gsExports      = mempty
+  , gsMeasures     = mempty
+  , gsTyconEnv     = mempty
+  , gsDicts        = mempty
+  , gsAxioms       = mempty
+  , gsReflects     = mempty
+  , gsMethReflects = mempty
+  , gsLogicMap     = mempty
+  , gsProofType    = Nothing
+  , gsRTAliases    = mempty
   }
 
 
@@ -756,7 +758,7 @@ makeGhcSpecCHOP3 cfg vars defVars specs name mts embs = do
   let asms  = [ (x, txRefSort tyi embs $ fmap txExpToBind t) | (_, x, t) <- asms' ]
   let hms   = concatMap (S.toList . Ms.hmeas . snd) (filter ((==name) . fst) specs)
   let minvs = makeMeasureInvariants sigs hms
-  checkDuplicateSigs sigs -- separate checks as assumes are supposed to "override" other sigs. 
+  checkDuplicateSigs sigs -- separate checks as assumes are supposed to "override" other sigs.
   -- checkDuplicateSigs asms
   return     (invs ++ minvs, ntys, ialias, sigs, asms)
 
