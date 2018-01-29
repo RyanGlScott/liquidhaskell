@@ -77,7 +77,7 @@ makeClasses cmod cfg vs (mod, spec) = inModule mod $ mapM mkClass $ Ms.classes s
   where
     --FIXME: cleanup this code
     unClass = snd . bkClass . fourth4 . bkUniv
-    mkClass (RClass cc ss as ms)
+    mkClass (RClass cc ss as ms _)
             = do let c      = btc_tc cc
                  let l      = loc  c
                  let l'     = locE c

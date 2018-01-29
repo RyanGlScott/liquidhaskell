@@ -40,6 +40,7 @@ import Finder
 import HscTypes hiding (Target)
 import IdInfo
 import InstEnv
+import MkId (mkDictSelRhs)
 import Module
 import Panic (throwGhcExceptionIO)
 import Serialized
@@ -418,8 +419,16 @@ toGhcSpec cfg file cbs vars letVs tgtMod mgi tgtSpec logicMap impSpecs = do
   let exports   = mgi_exports mgi
   let specs     = (tgtMod, tgtSpec) : impSpecs
   let imps      = sortNub $ impNames ++ [ symbolString x | (_, sp) <- specs, x <- Ms.imports sp ]
-  ghcSpec      <- liftIO $ makeGhcSpec cfg file tgtMod cbs (mgi_tcs mgi) (mgi_cls_inst mgi) vars letVs exports hsc logicMap specs
+  let tcs       = mgi_tcs mgi
+  let type_env  = typeEnvFromEntities [] tcs (mgi_fam_insts mgi)
+  let cls_binds = concatMap getClassImplicitBinds (typeEnvClasses type_env)
+  ghcSpec      <- liftIO $ makeGhcSpec cfg file tgtMod cbs cls_binds tcs (mgi_cls_inst mgi) vars letVs exports hsc logicMap specs
   return (ghcSpec, imps, Ms.includes tgtSpec)
+  where
+    getClassImplicitBinds :: Class -> [(Var, CoreExpr)]
+    getClassImplicitBinds cls
+      = [ (op, mkDictSelRhs cls val_index)
+        | (op, val_index) <- classAllSelIds cls `zip` [0..] ]
 
 modSummaryHsFile :: ModSummary -> FilePath
 modSummaryHsFile modSummary =

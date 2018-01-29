@@ -19,6 +19,7 @@ module Language.Haskell.Liquid.Parse
 
 import           Control.Arrow                          (second)
 import           Control.Monad
+import           Data.Either
 import           Data.String
 import           Prelude                                hiding (error)
 import           Text.Parsec
@@ -1213,15 +1214,25 @@ classP
        c    <- classBTyConP
        spaces
        tvs  <- manyTill (bTyVar <$> tyVarIdP) (try $ reserved "where")
-       ms   <- grabs tyBindP
+       ms <- grabs $ try (reserved "reflect" *> fmap Left tyBindP) <|> fmap Right tyBindP
+       let reflectMeths = lefts ms
+           meths        = map (either id id) ms -- To preserve the order in which they were written
        spaces
-       return $ RClass c sups tvs ms -- sups tvs ms
+       return $ RClass
+         { rcName           = c
+         , rcSupers         = sups
+         , rcTyVars         = tvs
+         , rcMethods        = meths
+         , rcReflectMethods = reflectMeths
+         }
   where
     superP   = locParserP (toRCls <$> bareAtomBindP)
     supersP  = try (((parens (superP `sepBy1` comma)) <|> fmap pure superP)
                        <* reservedOp "=>")
                <|> return []
     toRCls x = x
+
+
 
 rawBodyP :: Parser Body
 rawBodyP

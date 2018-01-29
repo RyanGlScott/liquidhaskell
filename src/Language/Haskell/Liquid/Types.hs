@@ -330,46 +330,47 @@ type Qualifier = F.Qualifier
 -- parsing the target source and dependent libraries
 
 data GhcSpec = SP {
-    gsTySigs   :: ![(Var, LocSpecType)]          -- ^ Asserted Reftypes
-  , gsAsmSigs  :: ![(Var, LocSpecType)]          -- ^ Assumed Reftypes
-  , gsInSigs   :: ![(Var, LocSpecType)]          -- ^ Auto generated Signatures
-  , gsCtors    :: ![(Var, LocSpecType)]          -- ^ Data Constructor Measure Sigs
-  , gsLits     :: ![(Symbol, LocSpecType)]       -- ^ Literals/Constants
-                                                 -- e.g. datacons: EQ, GT, string lits: "zombie",...
-  , gsMeas     :: ![(Symbol, LocSpecType)]       -- ^ Measure Types
-                                                 -- eg.  len :: [a] -> Int
-  , gsInvariants :: ![(Maybe Var, LocSpecType)]  -- ^ Data Type Invariants that came from the definition of var measure
-                                                 -- eg.  forall a. {v: [a] | len(v) >= 0}
-  , gsIaliases   :: ![(LocSpecType, LocSpecType)]-- ^ Data Type Invariant Aliases
-  , gsDconsP     :: ![F.Located DataCon]           -- ^ Predicated Data-Constructors
-                                                 -- e.g. see tests/pos/Map.hs
-  , gsTconsP     :: ![(TyCon, TyConP)]           -- ^ Predicated Type-Constructors
-                                                 -- eg.  see tests/pos/Map.hs
-  , gsFreeSyms   :: ![(Symbol, Var)]             -- ^ List of `Symbol` free in spec and corresponding GHC var
-                                                 -- eg. (Cons, Cons#7uz) from tests/pos/ex1.hs
-  , gsTcEmbeds   :: F.TCEmb TyCon                  -- ^ How to embed GHC Tycons into fixpoint sorts
-                                                 -- e.g. "embed Set as Set_set" from include/Data/Set.spec
-  , gsQualifiers :: ![Qualifier]                 -- ^ Qualifiers in Source/Spec files
-                                                 -- e.g tests/pos/qualTest.hs
-  , gsADTs       :: ![F.DataDecl]                -- ^ ADTs extracted from Haskell 'data' definitions
-  , gsTgtVars    :: ![Var]                       -- ^ Top-level Binders To Verify (empty means ALL binders)
-  , gsDecr       :: ![(Var, [Int])]              -- ^ Lexicographically ordered size witnesses for termination
-  , gsTexprs     :: ![(Var, [F.Located Expr])]     -- ^ Lexicographically ordered expressions for termination
-  , gsNewTypes   :: ![(TyCon, LocSpecType)]      -- ^ Mapping of 'newtype' type constructors with their refined types.
-  , gsLvars      :: !(S.HashSet Var)             -- ^ Variables that should be checked in the environment they are used
-  , gsLazy       :: !(S.HashSet Var)             -- ^ Binders to IGNORE during termination checking
-  , gsAutosize   :: !(S.HashSet TyCon)           -- ^ Binders to IGNORE during termination checking
-  , gsAutoInst   :: !(M.HashMap Var (Maybe Int))  -- ^ Binders to expand with automatic axiom instances maybe with specified fuel
-  , gsConfig     :: !Config                      -- ^ Configuration Options
-  , gsExports    :: !NameSet                       -- ^ `Name`s exported by the module being verified
-  , gsMeasures   :: [Measure SpecType DataCon]
-  , gsTyconEnv   :: M.HashMap TyCon RTyCon
-  , gsDicts      :: DEnv Var SpecType              -- ^ Dictionary Environment
-  , gsAxioms     :: [AxiomEq]                      -- ^ Axioms from reflected functions
-  , gsReflects   :: [Var]                          -- ^ Binders for reflected functions
-  , gsLogicMap   :: LogicMap
-  , gsProofType  :: Maybe Type
-  , gsRTAliases  :: !RTEnv                         -- ^ Refinement type aliases
+    gsTySigs       :: ![(Var, LocSpecType)]          -- ^ Asserted Reftypes
+  , gsAsmSigs      :: ![(Var, LocSpecType)]          -- ^ Assumed Reftypes
+  , gsInSigs       :: ![(Var, LocSpecType)]          -- ^ Auto generated Signatures
+  , gsCtors        :: ![(Var, LocSpecType)]          -- ^ Data Constructor Measure Sigs
+  , gsLits         :: ![(Symbol, LocSpecType)]       -- ^ Literals/Constants
+                                                     -- e.g. datacons: EQ, GT, string lits: "zombie",...
+  , gsMeas         :: ![(Symbol, LocSpecType)]       -- ^ Measure Types
+                                                     -- eg.  len :: [a] -> Int
+  , gsInvariants   :: ![(Maybe Var, LocSpecType)]    -- ^ Data Type Invariants that came from the definition of var measure
+                                                     -- eg.  forall a. {v: [a] | len(v) >= 0}
+  , gsIaliases     :: ![(LocSpecType, LocSpecType)]  -- ^ Data Type Invariant Aliases
+  , gsDconsP       :: ![F.Located DataCon]           -- ^ Predicated Data-Constructors
+                                                     -- e.g. see tests/pos/Map.hs
+  , gsTconsP       :: ![(TyCon, TyConP)]             -- ^ Predicated Type-Constructors
+                                                     -- eg.  see tests/pos/Map.hs
+  , gsFreeSyms     :: ![(Symbol, Var)]               -- ^ List of `Symbol` free in spec and corresponding GHC var
+                                                     -- eg. (Cons, Cons#7uz) from tests/pos/ex1.hs
+  , gsTcEmbeds     :: F.TCEmb TyCon                  -- ^ How to embed GHC Tycons into fixpoint sorts
+                                                     -- e.g. "embed Set as Set_set" from include/Data/Set.spec
+  , gsQualifiers   :: ![Qualifier]                   -- ^ Qualifiers in Source/Spec files
+                                                     -- e.g tests/pos/qualTest.hs
+  , gsADTs         :: ![F.DataDecl]                  -- ^ ADTs extracted from Haskell 'data' definitions
+  , gsTgtVars      :: ![Var]                         -- ^ Top-level Binders To Verify (empty means ALL binders)
+  , gsDecr         :: ![(Var, [Int])]                -- ^ Lexicographically ordered size witnesses for termination
+  , gsTexprs       :: ![(Var, [F.Located Expr])]     -- ^ Lexicographically ordered expressions for termination
+  , gsNewTypes     :: ![(TyCon, LocSpecType)]        -- ^ Mapping of 'newtype' type constructors with their refined types.
+  , gsLvars        :: !(S.HashSet Var)               -- ^ Variables that should be checked in the environment they are used
+  , gsLazy         :: !(S.HashSet Var)               -- ^ Binders to IGNORE during termination checking
+  , gsAutosize     :: !(S.HashSet TyCon)             -- ^ Binders to IGNORE during termination checking
+  , gsAutoInst     :: !(M.HashMap Var (Maybe Int))   -- ^ Binders to expand with automatic axiom instances maybe with specified fuel
+  , gsConfig       :: !Config                        -- ^ Configuration Options
+  , gsExports      :: !NameSet                       -- ^ `Name`s exported by the module being verified
+  , gsMeasures     :: [Measure SpecType DataCon]
+  , gsTyconEnv     :: M.HashMap TyCon RTyCon
+  , gsDicts        :: DEnv Var SpecType              -- ^ Dictionary Environment
+  , gsAxioms       :: [AxiomEq]                      -- ^ Axioms from reflected functions
+  , gsReflects     :: [Var]                          -- ^ Binders for reflected functions
+  , gsMethReflects :: [Var]                          -- ^ Binders for reflected class methods
+  , gsLogicMap     :: LogicMap
+  , gsProofType    :: Maybe Type
+  , gsRTAliases    :: !RTEnv                         -- ^ Refinement type aliases
   }
 
 instance HasConfig GhcSpec where
@@ -2047,10 +2048,11 @@ instance F.Subable t => F.Subable (WithModel t) where
   subst su             = fmap (F.subst su)
 
 data RClass ty = RClass
-  { rcName    :: BTyCon
-  , rcSupers  :: [ty]
-  , rcTyVars  :: [BTyVar]
-  , rcMethods :: [(F.LocSymbol, ty)]
+  { rcName           :: BTyCon
+  , rcSupers         :: [ty]
+  , rcTyVars         :: [BTyVar]
+  , rcMethods        :: [(F.LocSymbol, ty)]
+  , rcReflectMethods :: [(F.LocSymbol, ty)] -- TODO RGS: This only needs to be [LocSymbol]?
   } deriving (Show, Functor, Data, Typeable, Generic)
 
 
