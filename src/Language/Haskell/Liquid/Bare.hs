@@ -86,6 +86,7 @@ makeGhcSpec :: Config
             -> FilePath
             -> ModName
             -> [CoreBind]
+            -> [CoreBind] -- Class method core bindings. TODO RGS: Note
             -> [TyCon]
             -> Maybe [ClsInst]
             -> [Var]
@@ -96,12 +97,12 @@ makeGhcSpec :: Config
             -> [(ModName, Ms.BareSpec)]
             -> IO GhcSpec
 --------------------------------------------------------------------------------
-makeGhcSpec cfg file name cbs tcs instenv vars defVars exports env lmap specs = do
+makeGhcSpec cfg file name cbs cls_meth_cbs tcs instenv vars defVars exports env lmap specs = do
   sp         <- throwLeft =<< execBare act initEnv
   let renv    = L.foldl' (\e (x, s) -> insertSEnv x (RR s mempty) e) (ghcSpecEnv sp defVars) wiredSortedSyms
   throwLeft . checkGhcSpec specs renv $ postProcess cbs renv sp
   where
-    act       = makeGhcSpec' cfg file cbs tcs instenv vars defVars exports specs
+    act       = makeGhcSpec' cfg file cbs cls_meth_cbs tcs instenv vars defVars exports specs
     throwLeft = either Ex.throw return
     lmap'     = case lmap of { Left e -> Ex.throw e; Right x -> x `mappend` listLMap}
     initEnv   = BE name mempty mempty mempty env lmap' mempty mempty mempty
@@ -378,11 +379,14 @@ checkDisjoint xs ys
 
 --------------------------------------------------------------------------------
 makeGhcSpec'
-  :: Config -> FilePath -> [CoreBind] -> [TyCon] -> Maybe [ClsInst] -> [Var] -> [Var]
+  :: Config -> FilePath
+  -> [CoreBind]
+  -> [CoreBind] -- Class method core binds. TODO RGS note
+  -> [TyCon] -> Maybe [ClsInst] -> [Var] -> [Var]
   -> NameSet -> [(ModName, Ms.BareSpec)]
   -> BareM GhcSpec
 --------------------------------------------------------------------------------
-makeGhcSpec' cfg file cbs tcs instenv vars defVars exports specs0 = do
+makeGhcSpec' cfg file cbs cls_meth_cbs tcs instenv vars defVars exports specs0 = do
   -- liftIO $ _dumpSigs specs0
   name           <- modName <$> get
   let mySpec      = fromMaybe mempty (lookup name specs0)
@@ -417,7 +421,7 @@ makeGhcSpec' cfg file cbs tcs instenv vars defVars exports specs0 = do
     >>= makeGhcSpec3 (datacons ++ cls) tycons embs syms
     >>= makeSpecDictionaries embs vars specs
     -- The lifted-spec is saved in the next step
-    >>= makeGhcAxioms file name embs cbs su specs lSpec0 invs adts
+    >>= makeGhcAxioms file name embs cbs cls_meth_cbs su specs lSpec0 invs adts
     >>= makeLogicMap
     >>= makeExactDataCons name cfg (snd <$> syms)
     -- This step needs the UPDATED logic map, ie should happen AFTER makeLogicMap
@@ -471,15 +475,18 @@ getAxiomEqs = concatMap (Ms.axeqs . snd)
 
 -- TODO: pull the `makeLiftedSpec1` out; a function should do ONE thing.
 makeGhcAxioms
-  :: FilePath -> ModName -> TCEmb TyCon -> [CoreBind] -> Subst
+  :: FilePath -> ModName -> TCEmb TyCon
+  -> [CoreBind]
+  -> [CoreBind] -- Class method core binds. TODO RGS note
+  -> Subst
   -> [(ModName, Ms.BareSpec)] -> Ms.BareSpec
   -> [(Maybe Var, LocSpecType)] -> [F.DataDecl]
   -> GhcSpec
   -> BareM GhcSpec
-makeGhcAxioms file name embs cbs su specs lSpec0 invs adts sp = do
+makeGhcAxioms file name embs cbs cls_meth_cbs su specs lSpec0 invs adts sp = do
   let mSpc = fromMaybe mempty (lookup name specs)
   let rfls = S.fromList (getReflects specs)
-  xtes    <- makeHaskellAxioms embs cbs sp mSpc adts
+  xtes    <- makeHaskellAxioms embs cbs cls_meth_cbs sp mSpc adts
   let xts  = [ (x, subst su t)       | (x, t, _) <- xtes ]
   let mAxs = [ qualifyAxiomEq x su e | (x, _, e) <- xtes ]  -- axiom-eqs in THIS module
   let iAxs = getAxiomEqs specs                              -- axiom-eqs from IMPORTED modules
@@ -507,7 +514,6 @@ emptySpec     :: Config -> GhcSpec
 emptySpec cfg = SP
   { gsTySigs       = mempty
   , gsAsmSigs      = mempty
-  , gsMethSigs     = mempty
   , gsInSigs       = mempty
   , gsCtors        = mempty
   , gsLits         = mempty

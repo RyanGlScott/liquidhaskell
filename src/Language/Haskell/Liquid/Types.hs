@@ -332,7 +332,6 @@ type Qualifier = F.Qualifier
 data GhcSpec = SP {
     gsTySigs       :: ![(Var, LocSpecType)]          -- ^ Asserted Reftypes
   , gsAsmSigs      :: ![(Var, LocSpecType)]          -- ^ Assumed Reftypes
-  , gsMethSigs     :: ![(Var, LocSpecType)]          -- ^ TODO RGS
   , gsInSigs       :: ![(Var, LocSpecType)]          -- ^ Auto generated Signatures
   , gsCtors        :: ![(Var, LocSpecType)]          -- ^ Data Constructor Measure Sigs
   , gsLits         :: ![(Symbol, LocSpecType)]       -- ^ Literals/Constants

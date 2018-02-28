@@ -33,10 +33,13 @@ import           Language.Haskell.Liquid.Bare.Env
 
 --------------------------------------------------------------------------------
 makeHaskellAxioms
-  :: F.TCEmb TyCon -> [CoreBind] -> GhcSpec -> Ms.BareSpec -> [F.DataDecl]
+  :: F.TCEmb TyCon
+  -> [CoreBind]
+  -> [CoreBind] -- Class method core binds. TODO RGS note
+  -> GhcSpec -> Ms.BareSpec -> [F.DataDecl]
   -> BareM [ (Var, LocSpecType, AxiomEq)]
 --------------------------------------------------------------------------------
-makeHaskellAxioms tce cbs spec sp adts = do
+makeHaskellAxioms tce cbs _cls_meth_cbs spec sp adts = do
   xtvds <- getReflectDefs spec sp cbs
   forM_ xtvds $ \(x,_,v,_) -> updateLMapXV x v
   lmap  <- logicEnv <$> get
@@ -56,6 +59,19 @@ getReflectDefs spec sp cbs  = mapM (findVarDefType cbs sigs) xs
   where
     sigs                    = gsTySigs spec
     xs                      = S.toList (Ms.reflects sp)
+
+{-
+getReflectClassMeths
+  :: GhcSpec -> Ms.BareSpec
+  -> BareM [(LocSymbol, Maybe SpecType, Var)]
+getReflectClassMeths spec sp =
+  let classes :: [RClass LocBareType]
+      classes      = Ms.classes sp
+
+      reflectMeths :: [(LocSymbol, LocBareType)]
+      reflectMeths = concatMap rcReflectMethods classes
+  in undefined
+-}
 
 findVarDefType
   :: [CoreBind] -> [(Var, LocSpecType)] -> LocSymbol
