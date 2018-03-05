@@ -421,14 +421,13 @@ toGhcSpec cfg file cbs vars letVs tgtMod mgi tgtSpec logicMap impSpecs = do
   let imps      = sortNub $ impNames ++ [ symbolString x | (_, sp) <- specs, x <- Ms.imports sp ]
   let tcs       = mgi_tcs mgi
   let type_env  = typeEnvFromEntities [] tcs (mgi_fam_insts mgi)
-  let cls_meth_cbs = concatMap getClassImplicitBinds (typeEnvClasses type_env)
-  ghcSpec      <- liftIO $ makeGhcSpec cfg file tgtMod cbs cls_meth_cbs tcs (mgi_cls_inst mgi) vars letVs exports hsc logicMap specs
+  let cls_binds = concatMap getClassImplicitBinds (typeEnvClasses type_env)
+  ghcSpec      <- liftIO $ makeGhcSpec cfg file tgtMod cbs cls_binds tcs (mgi_cls_inst mgi) vars letVs exports hsc logicMap specs
   return (ghcSpec, imps, Ms.includes tgtSpec)
   where
-    -- Taken directly from GHC, since it's not exported
-    getClassImplicitBinds :: Class -> [CoreBind]
+    getClassImplicitBinds :: Class -> [(Var, CoreExpr)]
     getClassImplicitBinds cls
-      = [ NonRec op (mkDictSelRhs cls val_index)
+      = [ (op, mkDictSelRhs cls val_index)
         | (op, val_index) <- classAllSelIds cls `zip` [0..] ]
 
 modSummaryHsFile :: ModSummary -> FilePath

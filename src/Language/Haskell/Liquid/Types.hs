@@ -2052,7 +2052,7 @@ data RClass ty = RClass
   , rcSupers         :: [ty]
   , rcTyVars         :: [BTyVar]
   , rcMethods        :: [(F.LocSymbol, ty)]
-  , rcReflectMethods :: [(F.LocSymbol, ty)]
+  , rcReflectMethods :: [(F.LocSymbol, ty)] -- TODO RGS: This only needs to be [LocSymbol]?
   } deriving (Show, Functor, Data, Typeable, Generic)
 
 

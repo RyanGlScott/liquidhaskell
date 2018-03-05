@@ -35,17 +35,19 @@ import           Language.Haskell.Liquid.Bare.Env
 makeHaskellAxioms
   :: F.TCEmb TyCon
   -> [CoreBind]
-  -> [CoreBind] -- Class method core binds. TODO RGS note
+  -> [(Var, CoreExpr)] -- Class bindings
   -> GhcSpec -> Ms.BareSpec -> [F.DataDecl]
   -> BareM [ (Var, LocSpecType, AxiomEq)]
 --------------------------------------------------------------------------------
-makeHaskellAxioms tce cbs _cls_meth_cbs spec sp adts = do
+makeHaskellAxioms tce cbs cls_binds spec sp adts = do
   xtvds <- getReflectDefs spec sp cbs
+  class_meth_defs <- getReflectClassMethDefs spec sp cls_binds
   forM_ xtvds $ \(x,_,v,_) -> updateLMapXV x v
   lmap  <- logicEnv <$> get
   let dm = dataConMap adts
-  mapM (makeAxiom tce lmap dm) xtvds
-
+  axioms1 <- mapM (makeAxiom tce lmap dm) xtvds
+  axioms2 <- mapM (makeClassMethAxiom tce lmap dm) class_meth_defs
+  pure $ axioms1 ++ axioms2
 
 updateLMapXV :: LocSymbol -> Var -> BareM ()
 updateLMapXV x v = do
@@ -60,18 +62,19 @@ getReflectDefs spec sp cbs  = mapM (findVarDefType cbs sigs) xs
     sigs                    = gsTySigs spec
     xs                      = S.toList (Ms.reflects sp)
 
-{-
-getReflectClassMeths
-  :: GhcSpec -> Ms.BareSpec
-  -> BareM [(LocSymbol, Maybe SpecType, Var)]
-getReflectClassMeths spec sp =
+getReflectClassMethDefs
+  :: GhcSpec -> Ms.BareSpec -> [(Var, CoreExpr)]
+  -> BareM [(LocSymbol, Maybe SpecType, Var, CoreExpr)]
+getReflectClassMethDefs spec sp cls_binds =
   let classes :: [RClass LocBareType]
-      classes      = Ms.classes sp
+      classes = Ms.classes sp
 
-      reflectMeths :: [(LocSymbol, LocBareType)]
-      reflectMeths = concatMap rcReflectMethods classes
-  in undefined
--}
+      reflectMethNames :: [LocSymbol]
+      reflectMethNames = concatMap (map fst . rcReflectMethods) classes
+
+      sigs :: [(Var, LocSpecType)]
+      sigs = gsTySigs spec in
+  mapM (findVarDefType (map (uncurry NonRec) cls_binds) sigs) reflectMethNames
 
 findVarDefType
   :: [CoreBind] -> [(Var, LocSpecType)] -> LocSymbol
@@ -95,6 +98,25 @@ makeAxiom tce lmap dm (x, mbT, v, def) = do
   updateLMap (x{val = (F.symbol . showPpr . getName) v}) x v
   let (t, e) = makeAssumeType tce lmap dm x mbT v def
   return (v, t, e)
+
+-- TODO RGS: Factor out common bits between makeAxiom and makeClassMethAxiom
+makeClassMethAxiom
+          :: F.TCEmb TyCon
+          -> LogicMap
+          -> DataConMap
+          -> (LocSymbol, Maybe SpecType, Var, CoreExpr)
+          -> BareM (Var, LocSpecType, AxiomEq)
+makeClassMethAxiom = makeAxiom
+{-
+makeClassMethAxiom :: (LocSymbol, Maybe SpecType, Var, CoreExpr)
+                   -> BareM (Var, LocSpecType, AxiomEq)
+makeClassMethAxiom (x, mbT, v, def) = do
+  insertAxiom v Nothing
+  updateLMap x x v
+  updateLMap (x{val = (F.symbol . showPpr . getName) v}) x v
+  let (t, e) = makeClassMethType x mbT v def
+  return (v, t, e)
+-}
 
 mkError :: LocSymbol -> String -> Error
 mkError x str = ErrHMeas (sourcePosSrcSpan $ loc x) (pprint $ val x) (text str)
@@ -122,6 +144,15 @@ makeAssumeType tce lmap dm x mbT v def
                            ++ zip (simplesymbol <$> xs) xArgs
     xts        = zipWith (\x t -> (F.symbol x, rTypeSort tce t)) xs ts
     ts         = filter (not . isClassType) (ty_args tRep)
+
+{-
+makeClassMethAxiom
+  :: LocSymbol -> Maybe SpecType -> Var -> CoreExpr
+  -> (LocSpecType, AxiomEq)
+makeClassMethAxiom x mbT v def
+  = (x {val = at, F.mkEquation (val x) _ _)
+  where
+-}
 
 -- makeSMTAxiom :: LocSymbol -> [(Symbol, F.Sort)] -> F.Expr -> F.Sort -> AxiomEq
 -- makeSMTAxiom = F.mkEquation . val
