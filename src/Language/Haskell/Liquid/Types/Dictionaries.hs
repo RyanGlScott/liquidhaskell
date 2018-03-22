@@ -36,7 +36,7 @@ makeDictionary (RI c ts xts) = (makeDictionaryName (btc_tc c) ts, M.fromList (ma
 
 makeDictionaryName :: Located F.Symbol -> [SpecType] -> F.Symbol
 makeDictionaryName t ts
-  = F.notracepp _msg $ F.symbol ("$f" ++ F.symbolString (val t) ++ concatMap makeDicTypeName ts)
+  = F.notracepp _msg $ F.symbol "" -- ("$f" ++ F.symbolString (val t) ++ concatMap makeDicTypeName ts)
   where
     _msg = "MAKE-DICTIONARY " ++ F.showpp (val t, ts)
 
