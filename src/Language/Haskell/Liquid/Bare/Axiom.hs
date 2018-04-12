@@ -31,6 +31,9 @@ import           Language.Haskell.Liquid.GHC.Misc
 import           Language.Haskell.Liquid.Types
 import           Language.Haskell.Liquid.Bare.Env
 
+import Debug.Trace
+import qualified Outputable as O
+
 --------------------------------------------------------------------------------
 makeHaskellAxioms
   :: F.TCEmb TyCon
@@ -40,6 +43,8 @@ makeHaskellAxioms
   -> BareM [ (Var, LocSpecType, AxiomEq)]
 --------------------------------------------------------------------------------
 makeHaskellAxioms tce cbs cls_binds spec sp adts = do
+  O.pprTrace "RGS makeHaskellAxioms"
+    (O.vcat [ O.text "cbs" O.<+> O.ppr cbs ]) $ return ()
   xtvds <- getReflectDefs spec sp cbs
   class_meth_defs <- getReflectClassMethDefs spec sp cls_binds
   forM_ xtvds $ \(x,_,v,_) -> updateLMapXV x v
@@ -57,10 +62,12 @@ updateLMapXV x v = do
 getReflectDefs
   :: GhcSpec -> Ms.BareSpec -> [CoreBind]
   -> BareM [(LocSymbol, Maybe SpecType, Var, CoreExpr)]
-getReflectDefs spec sp cbs  = mapM (findVarDefType cbs sigs) xs
+getReflectDefs spec sp cbs  = do
+  traceShowM ("xs", xs)
+  mapM (findVarDefType cbs sigs) xs
   where
     sigs                    = gsTySigs spec
-    xs                      = S.toList (Ms.reflects sp)
+    xs                      = const [F.dummyLoc "$c+_aTU", F.dummyLoc "$c-_aTE"] $ S.toList (Ms.reflects sp)
 
 getReflectClassMethDefs
   :: GhcSpec -> Ms.BareSpec -> [(Var, CoreExpr)]
